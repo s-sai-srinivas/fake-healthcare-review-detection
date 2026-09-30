@@ -7,3 +7,5 @@ venv/
 !data_health_Online.csv.example
 .ipynb_checkpoints/
 .DS_Store
+.vercel
+.env*

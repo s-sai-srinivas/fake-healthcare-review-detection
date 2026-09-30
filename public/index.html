@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fake Review Detection — Healthcare</title>
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: system-ui, sans-serif; }
+  body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: linear-gradient(135deg, #e0f2fe, #ccfbf1); padding: 1rem; }
+  .card { width: 100%; max-width: 560px; background: rgba(255,255,255,.7);
+          backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.8);
+          border-radius: 1.25rem; padding: 2rem; box-shadow: 0 20px 50px rgba(2,44,34,.15); }
+  h1 { font-size: 1.4rem; color: #0f172a; }
+  p.sub { color: #475569; font-size: .85rem; margin: .4rem 0 1.2rem; }
+  textarea { width: 100%; height: 120px; border-radius: .75rem; border: 1px solid #cbd5e1;
+             padding: .8rem; font-size: .9rem; resize: vertical; }
+  button { margin-top: .8rem; width: 100%; padding: .8rem; border: none; border-radius: .75rem;
+           background: linear-gradient(90deg,#2563eb,#0d9488); color: #fff; font-weight: 600;
+           cursor: pointer; }
+  button:disabled { opacity: .6; }
+  #result { margin-top: 1rem; padding: 1rem; border-radius: .75rem; display: none; font-size: .9rem; }
+  .fake { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+  .genuine { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+  .bar { height: 8px; border-radius: 4px; background: #e2e8f0; margin-top: .5rem; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 4px; }
+  .tag { font-weight: 700; font-size: 1.05rem; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Fake Review Detection</h1>
+    <p class="sub">Paste a healthcare review — the model flags suspiciously promotional or fake text. TF-IDF + Logistic Regression.</p>
+    <textarea id="text" placeholder="e.g. The doctor changed my life forever!! Best hospital ever!!"></textarea>
+    <button id="btn" onclick="analyze()">Analyze review</button>
+    <div id="result"></div>
+  </div>
+<script>
+async function analyze() {
+  const btn = document.getElementById('btn');
+  const out = document.getElementById('result');
+  const text = document.getElementById('text').value;
+  btn.disabled = true; btn.textContent = 'Analyzing…';
+  out.style.display = 'none';
+  try {
+    const res = await fetch('/api/predict', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    const fake = data.label === 'FAKE';
+    out.className = fake ? 'fake' : 'genuine';
+    out.innerHTML = `<span class="tag">${data.label}</span> — ${data.confidence}% confidence
+      <div class="bar"><div style="width:${data.confidence}%;background:${fake ? '#ef4444' : '#22c55e'}"></div></div>`;
+    out.style.display = 'block';
+  } catch (e) {
+    out.className = 'fake';
+    out.textContent = e.message;
+    out.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Analyze review';
+  }
+}
+</script>
+</body>
+</html>
